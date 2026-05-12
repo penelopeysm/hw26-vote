@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hack Week STV Vote</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        h1 {
+            font-size: 1.6rem;
+            margin-bottom: 0.3rem;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 2rem;
+            line-height: 1.5;
+        }
+
+        .section-label {
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 0.5rem;
+            color: #555;
+        }
+
+        /* Candidate pool */
+        #candidate-pool {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-height: 40px;
+            padding: 10px;
+            background: #fff;
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+
+        /* Ranking list */
+        #ranking-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-height: 60px;
+            padding: 10px;
+            background: #e8f4e8;
+            border: 2px dashed #6a6;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+
+        #ranking-list:empty::after {
+            content: "Drag candidates here to rank them (top = 1st preference)";
+            color: #888;
+            font-style: italic;
+            text-align: center;
+            padding: 1rem;
+        }
+
+        .candidate {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            cursor: grab;
+            user-select: none;
+            transition: box-shadow 0.15s, border-color 0.15s;
+        }
+
+        .candidate:hover {
+            border-color: #999;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        }
+
+        .candidate.dragging {
+            opacity: 0.4;
+        }
+
+        .candidate .rank-badge {
+            display: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #2a7a2a;
+            color: #fff;
+            font-weight: 700;
+            font-size: 0.85rem;
+            flex-shrink: 0;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #ranking-list .candidate .rank-badge {
+            display: flex;
+        }
+
+        .candidate .issue-number {
+            font-weight: 700;
+            color: #0366d6;
+            font-size: 0.85rem;
+            flex-shrink: 0;
+        }
+
+        .candidate .issue-number a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .candidate .issue-number a:hover {
+            text-decoration: underline;
+        }
+
+        .candidate .title {
+            flex: 1;
+            font-size: 0.95rem;
+        }
+
+        .candidate .grip {
+            color: #aaa;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .drop-indicator {
+            height: 3px;
+            background: #2a7a2a;
+            border-radius: 2px;
+            margin: -3px 0;
+        }
+
+        /* Form area */
+        .form-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .form-row label {
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+
+        .form-row input {
+            flex: 1;
+            min-width: 140px;
+            padding: 8px 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 0.95rem;
+        }
+
+        button#submit-btn {
+            padding: 10px 24px;
+            background: #2a7a2a;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        button#submit-btn:hover {
+            background: #1f5f1f;
+        }
+
+        button#submit-btn:disabled {
+            background: #999;
+            cursor: not-allowed;
+        }
+
+        .message {
+            margin-top: 1rem;
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-size: 0.95rem;
+        }
+
+        .message.error { background: #fdecea; color: #b71c1c; }
+        .message.success { background: #e8f5e9; color: #1b5e20; }
+
+        .reset-link {
+            display: inline-block;
+            margin-top: 1rem;
+            color: #0366d6;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .reset-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Hack Week STV Vote</h1>
+    <p class="subtitle">
+        Drag candidates from the pool into the ranking area to vote.
+        Top of the list = first preference. You can rank as many or as few as you like.
+    </p>
+
+    <div class="section-label">Candidates</div>
+    <div id="candidate-pool">
+        {% for c in candidates %}
+        <div class="candidate" draggable="true" data-number="{{ c.number }}">
+            <span class="rank-badge"></span>
+            <span class="grip">⠿</span>
+            <span class="issue-number"><a href="https://github.com/alan-turing-institute/Hut23/issues/{{ c.number }}" target="_blank" rel="noopener">#{{ c.number }}</a></span>
+            <span class="title">{{ c.title }}</span>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="section-label">Your ranking (top = 1st preference)</div>
+    <div id="ranking-list"></div>
+
+    <p class="subtitle">You only need to rank the projects you care about — leave the rest in the pool.</p>
+
+    <div class="form-row">
+        <label>Password
+            <input type="password" id="vote-password" placeholder="Voting password">
+        </label>
+    </div>
+
+    <button id="submit-btn">Submit vote</button>
+
+    <div id="message-area"></div>
+</div>
+
+<script>
+const pool = document.getElementById("candidate-pool");
+const ranking = document.getElementById("ranking-list");
+
+// if (document.cookie.includes("voted=1")) {
+//     document.querySelector(".container").innerHTML =
+//         '<h1>Hack Week STV Vote</h1>' +
+//         '<p class="subtitle">You have already voted. Thank you!</p>';
+// }
+
+// Shuffle candidates in the pool (Fisher-Yates)
+const poolChildren = [...pool.children];
+for (let i = poolChildren.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    pool.appendChild(poolChildren[j]);
+    poolChildren[j] = poolChildren[i];
+}
+let draggedEl = null;
+
+function updateBadges() {
+    ranking.querySelectorAll(".candidate").forEach((el, i) => {
+        el.querySelector(".rank-badge").textContent = i + 1;
+    });
+}
+
+function addDragListeners(el) {
+    el.addEventListener("dragstart", e => {
+        draggedEl = el;
+        el.classList.add("dragging");
+        e.dataTransfer.effectAllowed = "move";
+    });
+    el.addEventListener("dragend", () => {
+        el.classList.remove("dragging");
+        document.querySelectorAll(".drop-indicator").forEach(d => d.remove());
+        draggedEl = null;
+    });
+}
+
+document.querySelectorAll(".candidate").forEach(addDragListeners);
+
+function getDropIndex(container, y) {
+    const children = [...container.querySelectorAll(".candidate:not(.dragging)")];
+    for (let i = 0; i < children.length; i++) {
+        const rect = children[i].getBoundingClientRect();
+        if (y < rect.top + rect.height / 2) return i;
+    }
+    return children.length;
+}
+
+[pool, ranking].forEach(container => {
+    container.addEventListener("dragover", e => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+
+        document.querySelectorAll(".drop-indicator").forEach(d => d.remove());
+
+        const children = [...container.querySelectorAll(".candidate:not(.dragging)")];
+        const idx = getDropIndex(container, e.clientY);
+        const indicator = document.createElement("div");
+        indicator.className = "drop-indicator";
+
+        if (idx < children.length) {
+            container.insertBefore(indicator, children[idx]);
+        } else {
+            container.appendChild(indicator);
+        }
+    });
+
+    container.addEventListener("dragleave", e => {
+        if (!container.contains(e.relatedTarget)) {
+            container.querySelectorAll(".drop-indicator").forEach(d => d.remove());
+        }
+    });
+
+    container.addEventListener("drop", e => {
+        e.preventDefault();
+        document.querySelectorAll(".drop-indicator").forEach(d => d.remove());
+        if (!draggedEl) return;
+
+        const children = [...container.querySelectorAll(".candidate:not(.dragging)")];
+        const idx = getDropIndex(container, e.clientY);
+
+        if (idx < children.length) {
+            container.insertBefore(draggedEl, children[idx]);
+        } else {
+            container.appendChild(draggedEl);
+        }
+
+        updateBadges();
+    });
+});
+
+// Touch support for mobile
+let touchClone = null;
+let touchSource = null;
+let touchOffsetX = 0;
+let touchOffsetY = 0;
+
+document.querySelectorAll(".candidate").forEach(el => {
+    el.addEventListener("touchstart", e => {
+        touchSource = el;
+        const touch = e.touches[0];
+        const rect = el.getBoundingClientRect();
+        touchOffsetX = touch.clientX - rect.left;
+        touchOffsetY = touch.clientY - rect.top;
+
+        touchClone = el.cloneNode(true);
+        touchClone.style.position = "fixed";
+        touchClone.style.zIndex = "9999";
+        touchClone.style.width = rect.width + "px";
+        touchClone.style.opacity = "0.8";
+        touchClone.style.pointerEvents = "none";
+        touchClone.style.left = (touch.clientX - touchOffsetX) + "px";
+        touchClone.style.top = (touch.clientY - touchOffsetY) + "px";
+        document.body.appendChild(touchClone);
+        el.classList.add("dragging");
+    }, {passive: true});
+
+    el.addEventListener("touchmove", e => {
+        if (!touchClone) return;
+        e.preventDefault();
+        const touch = e.touches[0];
+        touchClone.style.left = (touch.clientX - touchOffsetX) + "px";
+        touchClone.style.top = (touch.clientY - touchOffsetY) + "px";
+    }, {passive: false});
+
+    el.addEventListener("touchend", e => {
+        if (!touchSource || !touchClone) return;
+        touchClone.remove();
+        touchSource.classList.remove("dragging");
+
+        const touch = e.changedTouches[0];
+        const dropTarget = [ranking, pool].find(c => {
+            const r = c.getBoundingClientRect();
+            return touch.clientX >= r.left && touch.clientX <= r.right &&
+                   touch.clientY >= r.top && touch.clientY <= r.bottom;
+        });
+
+        if (dropTarget) {
+            const idx = getDropIndex(dropTarget, touch.clientY);
+            const children = [...dropTarget.querySelectorAll(".candidate")].filter(c => c !== touchSource);
+            if (idx < children.length) {
+                dropTarget.insertBefore(touchSource, children[idx]);
+            } else {
+                dropTarget.appendChild(touchSource);
+            }
+            updateBadges();
+        }
+
+        touchClone = null;
+        touchSource = null;
+    });
+});
+
+document.getElementById("submit-btn").addEventListener("click", async () => {
+    const btn = document.getElementById("submit-btn");
+    const msgArea = document.getElementById("message-area");
+    const password = document.getElementById("vote-password").value;
+    const ranked = [...ranking.querySelectorAll(".candidate")].map(el => parseInt(el.dataset.number));
+
+    msgArea.innerHTML = "";
+
+    if (ranked.length === 0) {
+        msgArea.innerHTML = '<div class="message error">Please rank at least one candidate.</div>';
+        return;
+    }
+    if (!password) {
+        msgArea.innerHTML = '<div class="message error">Please enter the voting password.</div>';
+        return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = "Submitting…";
+
+    try {
+        const res = await fetch("/vote", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({password: password, ranking: ranked})
+        });
+        const data = await res.json();
+        if (res.ok) {
+            // document.cookie = "voted=1; max-age=31536000; path=/; SameSite=Strict";
+            msgArea.innerHTML = '<div class="message success">Vote submitted! Thank you.</div>';
+            btn.style.display = "none";
+        } else {
+            msgArea.innerHTML = '<div class="message error">' + (data.error || "Something went wrong.") + '</div>';
+            btn.disabled = false;
+            btn.textContent = "Submit vote";
+        }
+    } catch {
+        msgArea.innerHTML = '<div class="message error">Network error. Please try again.</div>';
+        btn.disabled = false;
+        btn.textContent = "Submit vote";
+    }
+});
+</script>
+</body>
+</html>
