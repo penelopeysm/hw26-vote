@@ -26,17 +26,18 @@
             margin-bottom: 0.3rem;
         }
 
-        .subtitle {
-            color: #666;
-            margin-bottom: 2rem;
-            line-height: 1.5;
-        }
-
-        .section-label {
+        h2 {
             font-weight: 600;
-            font-size: 0.95rem;
+            font-size: 1.1rem;
+            margin-top: 1.5rem;
             margin-bottom: 0.5rem;
             color: #555;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 0.5rem;
+            line-height: 1.5;
         }
 
         /* Candidate pool */
@@ -223,7 +224,16 @@
         Top of the list = first preference. You can rank as many or as few as you like.
     </p>
 
-    <div class="section-label">Candidates</div>
+    <h2>How does STV work?</h2>
+    <p class="subtitle">Votes will be processed with a <a href="https://en.wikipedia.org/wiki/Single_transferable_vote" target="_blank" rel="noopener"><strong>STV (Single Transferable Vote)</strong> system</a>, specifically <a href="https://en.wikipedia.org/wiki/Counting_single_transferable_votes#Meek" target="_blank" rel="noopener">Meek's method</a>.</p>
+
+    <p class="subtitle">Essentially, the aim for each project is to reach a quota of first-preference votes.</p>
+
+    <p class="subtitle">This means that first-preference votes have the highest weight in determining the outcomes. Your lower preferences only matter if your higher-ranked projects are eliminated or already have enough votes to win.</p>
+
+    <p class="subtitle"><strong>Only rank projects you'd genuinely want to work on!</strong> If you wouldn't want to join a project, just leave it in the pool. Ranking a project last still helps it beat projects you <i>didn&rsquo;t</i> rank, so don't rank something just for the sake of completeness.</p>
+
+    <h2>Candidates</h2>
     <div id="candidate-pool">
         {% for c in candidates %}
         <div class="candidate" draggable="true" data-number="{{ c.number }}">
@@ -235,7 +245,7 @@
         {% endfor %}
     </div>
 
-    <div class="section-label">Your ranking (top = 1st preference)</div>
+    <h2>Your ranking (top = 1st preference)</h2>
     <div id="ranking-list"></div>
 
     <p class="subtitle">You only need to rank the projects you care about — leave the rest in the pool.</p>
