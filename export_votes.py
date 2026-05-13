@@ -41,5 +41,5 @@ for (ranking_json,) in rows:
     print("1 " + " ".join(prefs) + " 0")
 print("0")
 for issue, title in CANDIDATES:
-    print(f'"#{issue} {title}"')
+    print('"#{} {}"'.format(issue, title.replace('"', '\\"')))
 print('"Hack Week STV Vote"')

@@ -13,12 +13,12 @@ deploy:
 	fly deploy
 
 export:
-	fly ssh sftp get /data/votes.db /tmp/votes-export.db --app $(APP)
-	python3 export_votes.py /tmp/votes-export.db
+	@fly ssh sftp get /data/votes.db /tmp/votes-export.db --app $(APP)
+	@python3 export_votes.py /tmp/votes-export.db
 	@rm -f /tmp/votes-export.db
 
 export-local:
-	python3 export_votes.py
+	@python3 export_votes.py
 
 reset-db:
 	fly ssh console --app $(APP) -C "rm /data/votes.db"
