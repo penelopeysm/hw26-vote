@@ -248,11 +248,9 @@
     <h2>Your ranking (top = 1st preference)</h2>
     <div id="ranking-list"></div>
 
-    <p class="subtitle">You only need to rank the projects you care about — leave the rest in the pool.</p>
-
     <div class="form-row">
         <label>Password
-            <input type="password" id="vote-password" placeholder="Voting password">
+            <input type="text" id="vote-password" placeholder="Voting password">
         </label>
     </div>
 
@@ -267,11 +265,11 @@
 const pool = document.getElementById("candidate-pool");
 const ranking = document.getElementById("ranking-list");
 
-// if (document.cookie.includes("voted=1")) {
-//     document.querySelector(".container").innerHTML =
-//         '<h1>Hack Week STV Vote</h1>' +
-//         '<p class="subtitle">You have already voted. Thank you!</p>';
-// }
+if (document.cookie.includes("voted=1")) {
+    document.querySelector(".container").innerHTML =
+        '<h1>Hack Week STV Vote</h1>' +
+        '<p class="subtitle">You have already voted. Thank you!</p>';
+}
 
 // Shuffle candidates in the pool (Fisher-Yates)
 const poolChildren = [...pool.children];
@@ -445,7 +443,7 @@ document.getElementById("submit-btn").addEventListener("click", async () => {
         });
         const data = await res.json();
         if (res.ok) {
-            // document.cookie = "voted=1; max-age=31536000; path=/; SameSite=Strict";
+            document.cookie = "voted=1; max-age=31536000; path=/; SameSite=Strict";
             msgArea.innerHTML = '<div class="message success">Vote submitted! Thank you.</div>';
             btn.style.display = "none";
         } else {
